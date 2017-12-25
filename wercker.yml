@@ -50,7 +50,7 @@
    box: node:latest
    steps:
      - wercker/add-ssh-key:
-         keyname: DOCKER_AWS_DEV
+         keyname: Color_Game_SSH
      - add-to-known_hosts:
          hostname: $DEV_REMOTE_HOST
      - script:
