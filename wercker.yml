@@ -1,0 +1,80 @@
+# This references the default nginx container from the Docker Hub: https://registry.hub.docker.com/ 
+ box: nginx:latest
+
+# Build Definition
+ build:
+   # The steps that will be executed on build
+   
+   steps:
+
+     # A  custom script step, name value is used in the Wercker-UI
+     # and the code value contains the command that get executed
+     - script:
+         name: installing and testing install of curl
+         code: |
+           apt-get update
+           apt-get install -y curl
+           
+# note the indentation, this is still part of the build pipeline
+#   after-steps:                    
+#     - slack-notifier:
+#         url: $SLACK_URL
+#         username: werckerbot
+#         channel: notifications
+ 
+ push-to-dockerhub:
+   box: nginx:latest
+   
+   steps:
+     - script:
+         name: mv the files required and clean image
+         # include to install packages
+         # make internals avail for next step
+         code: |
+           cd $WERCKER_SOURCE_DIR
+           mv /pipeline/source/colorGame.html /usr/share/nginx/html
+           mv /pipeline/source/colorGame.css /usr/share/nginx/html
+           mv /pipeline/source/colorGame.js /usr/share/nginx/html
+
+     - internal/docker-push:
+         username: $DOCKER_USERNAME
+         password: $DOCKER_PASSWORD
+         # we want to push both the release image and as the latest
+         tag: dev-$WERCKER_GIT_COMMIT latest
+         repository: abhishekdudi/colorGame
+         registry: https://hub.docker.com
+         ports: 80 
+         cmd: nginx -g 'daemon off';
+ 
+ deploy-the-game:
+   box: node:latest
+   steps:
+     - wercker/add-ssh-key:
+         keyname: DOCKER_AWS_DEV
+     - add-to-known_hosts:
+         hostname: $DEV_REMOTE_HOST
+     - script:
+         name: Pull newest docker images
+         code: |
+           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker pull abhishekdudi/colorGame
+     - script:
+         name: Stop all running containers
+         code: |
+           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker stop $(docker ps -aq) || echo ‘failed to stop running container’
+     - script:
+         name: Remove stopped service/containers
+         code: |
+           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker rm abhi-linux2 || echo ‘failed to remove stopped container’
+     - script:
+         name: Remove Image behind all service/containers.
+         code: |
+           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker rmi abhishekdudi/colorGame:current || echo ‘failed to remove image behind stopped container’
+     - script:
+         name: Tag the pulled image
+         code: |
+           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker tag abhishekdudi/colorGame:latest abhishekdudi/colorGame:current
+     - script:
+         name: Start all services/containers
+         code: |
+           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker container run --detach -p 80:80 --name abhi-linux2 abhishekdudi/colorGame:current
+ 
