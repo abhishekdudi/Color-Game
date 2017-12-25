@@ -41,7 +41,7 @@
          password: $DOCKER_PASSWORD
          # we want to push both the release image and as the latest
          tag: dev-$WERCKER_GIT_COMMIT latest
-         repository: abhishekdudi/colorGame
+         repository: abhishekdudi/color-game
          registry: https://hub.docker.com
          ports: 80 
          cmd: nginx -g 'daemon off';
@@ -56,7 +56,7 @@
      - script:
          name: Pull newest docker images
          code: |
-           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker pull abhishekdudi/colorGame
+           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker pull abhishekdudi/color-game
      - script:
          name: Stop all running containers
          code: |
@@ -68,13 +68,13 @@
      - script:
          name: Remove Image behind all service/containers.
          code: |
-           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker rmi abhishekdudi/colorGame:current || echo ‘failed to remove image behind stopped container’
+           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker rmi abhishekdudi/color-game:current || echo ‘failed to remove image behind stopped container’
      - script:
          name: Tag the pulled image
          code: |
-           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker tag abhishekdudi/colorGame:latest abhishekdudi/colorGame:current
+           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker tag abhishekdudi/color-game:latest abhishekdudi/color-game:current
      - script:
          name: Start all services/containers
          code: |
-           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker container run --detach -p 80:80 --name abhi-linux2 abhishekdudi/colorGame:current
+           ssh $DEV_REMOTE_USER@$DEV_REMOTE_HOST docker container run --detach -p 80:80 --name abhi-linux2 abhishekdudi/color-game:current
  
